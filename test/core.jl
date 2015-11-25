@@ -4461,3 +4461,25 @@ end
 #end
 #@test local_innersig(Int32(2)) == ((Int32(2), Int32(1), Int32(2)im), (Int32(2), UInt32(1)))
 #@test local_innersig(Int64(3)) == ((Int64(3), Int64(1), Int64(3)im), (Int64(3), UInt64(1)))
+
+module TestUndefRefErrors14147
+
+using Base.Test
+
+# Test different kinds of UndefRefError
+call_fptr(p) = ccall(p, Int, ())
+return_int_function() = 100
+@test call_fptr(cfunction(return_int_function, Int, Tuple{})) == 100
+@test_throws UndefRefError call_fptr(C_NULL)
+
+type TypeWithUndefField
+    a
+    TypeWithUndefField() = new()
+end
+copy_undef_field(a, b) = (a.a = b.a)
+get_undef_field(a) = a.a
+@test_throws UndefRefError copy_undef_field(TypeWithUndefField(),
+                                            TypeWithUndefField())
+@test_throws UndefRefError get_undef_field(TypeWithUndefField())
+
+end
