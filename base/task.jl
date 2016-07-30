@@ -105,6 +105,7 @@ suppress_excp_printing(t::Task) = isa(t.storage, ObjectIdDict) ? get(get_task_tl
 
 # runtime system hook called when a task finishes
 function task_done_hook(t::Task)
+    # `finish_task` sets `sigatomic` before entering this function
     err = (t.state == :failed)
     result = t.result
     handled = false
@@ -152,6 +153,8 @@ function task_done_hook(t::Task)
             end
         end
     end
+    # Clear sigatomic before waiting
+    sigatomic_end()
     wait()
 end
 
