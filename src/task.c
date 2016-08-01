@@ -536,6 +536,7 @@ void JL_NORETURN throw_internal(jl_value_t *e)
         jl_static_show(JL_STDERR, e);
         jl_printf(JL_STDERR, "\n");
         jlbacktrace();
+        _exit(1);
         jl_exit(1);
     }
     assert(0);
