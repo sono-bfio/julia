@@ -698,13 +698,14 @@ import Base.securezero!
 type UserPasswordCredentials <: AbstractCredentials
     user::String
     pass::String
+    prompt_if_incorrect::Bool    # Whether to allow interactive prompting if the credentials are incorrect
     count::Int                   # authentication failure protection count
-    function UserPasswordCredentials(u::AbstractString,p::AbstractString)
-        c = new(u,p,3)
+    function UserPasswordCredentials(u::AbstractString,p::AbstractString,prompt_if_incorrect::Bool=false)
+        c = new(u,p,prompt_if_incorrect,3)
         finalizer(c, securezero!)
         return c
     end
-    UserPasswordCredentials() = UserPasswordCredentials("","")
+    UserPasswordCredentials(prompt_if_incorrect::Bool=false) = UserPasswordCredentials("","",prompt_if_incorrect)
 end
 
 function securezero!(cred::UserPasswordCredentials)
@@ -721,14 +722,15 @@ type SSHCredentials <: AbstractCredentials
     pubkey::String
     prvkey::String
     usesshagent::String  # used for ssh-agent authentication
+    prompt_if_incorrect::Bool    # Whether to allow interactive prompting if the credentials are incorrect
     count::Int
 
-    function SSHCredentials(u::AbstractString,p::AbstractString)
-        c = new(u,p,"","","Y",3)
+    function SSHCredentials(u::AbstractString,p::AbstractString,prompt_if_incorrect::Bool=false)
+        c = new(u,p,"","","Y",prompt_if_incorrect,3)
         finalizer(c, securezero!)
         return c
     end
-    SSHCredentials() = SSHCredentials("","")
+    SSHCredentials(prompt_if_incorrect::Bool=false) = SSHCredentials("","",prompt_if_incorrect)
 end
 function securezero!(cred::SSHCredentials)
     securezero!(cred.user)
