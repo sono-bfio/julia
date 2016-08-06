@@ -1646,13 +1646,6 @@ Bitwise and.
 &
 
 """
-    eigmax(A)
-
-Returns the largest eigenvalue of `A`.
-"""
-eigmax
-
-"""
     PipeBuffer()
 
 An IOBuffer that allows reading and performs writes by appending. Seeking and truncating are
@@ -3360,11 +3353,11 @@ Display an informational message. Argument `msg` is a string describing the info
 info
 
 """
-    eigmin(A)
+    acscd(x)
 
-Returns the smallest eigenvalue of `A`.
+Compute the inverse cosecant of `x`, where the output is in degrees.
 """
-eigmin
+acscd
 
 """
     ltoh(x)
@@ -6730,18 +6723,6 @@ an array of the results `f(as...)` for each position.
 broadcast
 
 """
-    eigvecs(A, [eigvals,][permute=true,][scale=true]) -> Matrix
-
-Returns a matrix `M` whose columns are the eigenvectors of `A`. (The `k`th eigenvector can
-be obtained from the slice `M[:, k]`.) The `permute` and `scale` keywords are the same as
-for [`eigfact`](:func:`eigfact`).
-
-For [`SymTridiagonal`](:class:`SymTridiagonal`) matrices, if the optional vector of
-eigenvalues `eigvals` is specified, returns the specific corresponding eigenvectors.
-"""
-eigvecs
-
-"""
     ntoh(x)
 
 Converts the endianness of a value from Network byte order (big-endian) to that used by the Host.
@@ -7185,45 +7166,12 @@ unsigned without checking for negative values.
 unsigned
 
 """
-    eigfact(A,[irange,][vl,][vu,][permute=true,][scale=true]) -> Eigen
-
-Computes the eigenvalue decomposition of `A`, returning an `Eigen` factorization object `F`
-which contains the eigenvalues in `F[:values]` and the eigenvectors in the columns of the
-matrix `F[:vectors]`. (The `k`th eigenvector can be obtained from the slice `F[:vectors][:, k]`.)
-
-The following functions are available for `Eigen` objects: `inv`, `det`.
-
-If `A` is [`Symmetric`](:class:`Symmetric`), [`Hermitian`](:class:`Hermitian`) or
-[`SymTridiagonal`](:class:`SymTridiagonal`), it is possible to calculate only a subset of
-the eigenvalues by specifying either a [`UnitRange`](:class:`UnitRange`) `irange` covering
-indices of the sorted eigenvalues or a pair `vl` and `vu` for the lower and upper boundaries
-of the eigenvalues.
-
-For general nonsymmetric matrices it is possible to specify how the matrix is balanced
-before the eigenvector calculation. The option `permute=true` permutes the matrix to become
-closer to upper triangular, and `scale=true` scales the matrix by its diagonal elements to
-make rows and columns more equal in norm. The default is `true` for both options.
-"""
-eigfact(A,?,?,?,?)
-
-"""
-    eigfact(A, B) -> GeneralizedEigen
-
-Computes the generalized eigenvalue decomposition of `A` and `B`, returning a
-`GeneralizedEigen` factorization object `F` which contains the generalized eigenvalues in
-`F[:values]` and the generalized eigenvectors in the columns of the matrix `F[:vectors]`.
-(The `k`th generalized eigenvector can be obtained from the slice `F[:vectors][:, k]`.)
-"""
-eigfact(A,B)
-
-"""
     mkdir(path, [mode])
 
 Make a new directory with name `path` and permissions `mode`. `mode` defaults to `0o777`,
 modified by the current file creation mask.
 """
 mkdir
-
 
 """
     midpoints(e)
@@ -7284,33 +7232,6 @@ a string. A character is classified as lowercase if it belongs to Unicode catego
 Letter: Lowercase.
 """
 islower
-
-"""
-    eig(A,[irange,][vl,][vu,][permute=true,][scale=true]) -> D, V
-
-Computes eigenvalues and eigenvectors of `A`. See [`eigfact`](:func:`eigfact`) for details
-on the `permute` and `scale` keyword arguments. The eigenvectors are returned columnwise.
-
-```jldoctest
-julia> eig([1.0 0.0 0.0; 0.0 3.0 0.0; 0.0 0.0 18.0])
-([1.0,3.0,18.0],
-[1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
-```
-
-`eig` is a wrapper around [`eigfact`](:func:`eigfact`), extracting all parts of the
-factorization to a tuple; where possible, using [`eigfact`](:func:`eigfact`) is recommended.
-"""
-eig(A,?,?,?)
-
-"""
-    eig(A, B) -> D, V
-
-Computes generalized eigenvalues and vectors of `A` with respect to `B`.
-
-`eig` is a wrapper around [`eigfact`](:func:`eigfact`), extracting all parts of the
-factorization to a tuple; where possible, using [`eigfact`](:func:`eigfact`) is recommended.
-"""
-eig(A,B)
 
 """
     exp2(x)

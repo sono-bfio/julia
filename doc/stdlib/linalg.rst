@@ -580,7 +580,7 @@ Linear algebra functions in Julia are largely implemented by calling functions f
 
    .. Docstring generated from Julia source
 
-   Computes eigenvalues and eigenvectors of ``A``\ . See :func:`eigfact` for details on the ``permute`` and ``scale`` keyword arguments. The eigenvectors are returned columnwise.
+   Computes eigenvalues (``D``\ ) and eigenvectors (``V``\ ) of ``A``\ . See :func:`eigfact` for details on the ``permute`` and ``scale`` keyword arguments. The eigenvectors are returned columnwise.
 
    .. doctest::
 
@@ -594,9 +594,25 @@ Linear algebra functions in Julia are largely implemented by calling functions f
 
    .. Docstring generated from Julia source
 
-   Computes generalized eigenvalues and vectors of ``A`` with respect to ``B``\ .
+   Computes generalized eigenvalues (``D``\ ) and vectors (``V``\ ) of ``A`` with respect to ``B``\ .
 
    ``eig`` is a wrapper around :func:`eigfact`\ , extracting all parts of the factorization to a tuple; where possible, using :func:`eigfact` is recommended.
+
+   .. doctest::
+
+       julia> A = [1 0; 0 -1]
+       2×2 Array{Int64,2}:
+        1   0
+        0  -1
+
+       julia> B = [0 1; 1 0]
+       2×2 Array{Int64,2}:
+        0  1
+        1  0
+
+       julia> eig(A, B)
+       (Complex{Float64}[0.0+1.0im,0.0-1.0im],
+       Complex{Float64}[0.0-1.0im 0.0+1.0im; -1.0-0.0im -1.0+0.0im])
 
 .. function:: eigvals(A,[irange,][vl,][vu]) -> values
 
@@ -610,15 +626,15 @@ Linear algebra functions in Julia are largely implemented by calling functions f
 
    .. Docstring generated from Julia source
 
-   Same as ``eigvals``\ , but saves space by overwriting the input ``A`` (and ``B``\ ), instead of creating a copy.
+   Same as :func:`eigvals`\ , but saves space by overwriting the input ``A``\ , instead of creating a copy.
 
-.. function:: eigmax(A)
+.. function:: eigmax(A; permute::Bool=true, scale::Bool=true)
 
    .. Docstring generated from Julia source
 
    Returns the largest eigenvalue of ``A``\ .
 
-.. function:: eigmin(A)
+.. function:: eigmin(A; permute::Bool=true, scale::Bool=true)
 
    .. Docstring generated from Julia source
 
@@ -636,9 +652,9 @@ Linear algebra functions in Julia are largely implemented by calling functions f
 
    .. Docstring generated from Julia source
 
-   Computes the eigenvalue decomposition of ``A``\ , returning an ``Eigen`` factorization object ``F`` which contains the eigenvalues in ``F[:values]`` and the eigenvectors in the columns of the matrix ``F[:vectors]``\ . (The ``k``\ th eigenvector can be obtained from the slice ``F[:vectors][:, k]``\ .)
+   Computes the eigenvalue decomposition of ``A``\ , returning an :obj:`Eigen` factorization object ``F`` which contains the eigenvalues in ``F[:values]`` and the eigenvectors in the columns of the matrix ``F[:vectors]``\ . (The ``k``\ th eigenvector can be obtained from the slice ``F[:vectors][:, k]``\ .)
 
-   The following functions are available for ``Eigen`` objects: ``inv``\ , ``det``\ .
+   The following functions are available for ``Eigen`` objects: :func:`inv`\ , :func:`det`\ , :func:`isposdef`\ , .
 
    If ``A`` is :class:`Symmetric`\ , :class:`Hermitian` or :class:`SymTridiagonal`\ , it is possible to calculate only a subset of the eigenvalues by specifying either a :class:`UnitRange` ``irange`` covering indices of the sorted eigenvalues or a pair ``vl`` and ``vu`` for the lower and upper boundaries of the eigenvalues.
 
