@@ -95,7 +95,15 @@ before_install:
 script:
     - make -C moreutils mispipe
     - make $BUILDOPTS -C base version_git.jl.phony
-    - moreutils/mispipe "make $BUILDOPTS VERBOSE=0 -C deps" bar > deps.log || cat deps.log
+    # capture the log, but only print it if `make deps` fails
+    # try to show the end of the log first, because this log might be very long (> 4MB)
+    # and thus be truncated by travis
+    - moreutils/mispipe "make $BUILDOPTS VERBOSE=0 -C deps 2>&1" "bar -i 30" > deps.log ||
+        { echo "-- deps build log tail 500 ---------------------------------------------";
+          tail -n 500 deps.log;
+          echo "------------------------------------------------------------------------";
+          cat deps.log;
+          false; }
     - make $BUILDOPTS NO_GIT=1 prefix=/tmp/julia install | moreutils/ts -s "%.s"
     - make $BUILDOPTS NO_GIT=1 build-stats
     - du -sk /tmp/julia/*
