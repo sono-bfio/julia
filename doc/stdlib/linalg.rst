@@ -632,13 +632,53 @@ Linear algebra functions in Julia are largely implemented by calling functions f
 
    .. Docstring generated from Julia source
 
-   Returns the largest eigenvalue of ``A``\ .
+   Returns the largest eigenvalue of ``A``\ . The option ``permute=true`` permutes the matrix to become closer to upper triangular, and ``scale=true`` scales the matrix by its diagonal elements to make rows and columns more equal in norm. Note that if the eigenvalues of ``A`` are complex, this method will fail, since complex numbers cannot be sorted.
+
+   .. doctest::
+
+       julia> A = [0 im; -im 0]
+       2×2 Array{Complex{Int64},2}:
+        0+0im  0+1im
+        0-1im  0+0im
+
+       julia> eigmax(A)
+       1.0
+
+       julia> A = [0 im; -1 0]
+       2×2 Array{Complex{Int64},2}:
+         0+0im  0+1im
+        -1+0im  0+0im
+
+       julia> eigmax(A)
+       ERROR: DomainError:
+        in #eigmax#30(::Bool, ::Bool, ::Function, ::Array{Complex{Int64},2}) at ./linalg/eigen.jl:108
+        in eigmax(::Array{Complex{Int64},2}) at ./linalg/eigen.jl:106
 
 .. function:: eigmin(A; permute::Bool=true, scale::Bool=true)
 
    .. Docstring generated from Julia source
 
-   Returns the smallest eigenvalue of ``A``\ .
+   Returns the smallest eigenvalue of ``A``\ . The option ``permute=true`` permutes the matrix to become closer to upper triangular, and ``scale=true`` scales the matrix by its diagonal elements to make rows and columns more equal in norm. Note that if the eigenvalues of ``A`` are complex, this method will fail, since complex numbers cannot be sorted.
+
+   .. doctest::
+
+       julia> A = [0 im; -im 0]
+       2×2 Array{Complex{Int64},2}:
+        0+0im  0+1im
+        0-1im  0+0im
+
+       julia> eigmin(A)
+       -1.0
+
+       julia> A = [0 im; -1 0]
+       2×2 Array{Complex{Int64},2}:
+         0+0im  0+1im
+        -1+0im  0+0im
+
+       julia> eigmin(A)
+       ERROR: DomainError:
+        in #eigmin#31(::Bool, ::Bool, ::Function, ::Array{Complex{Int64},2}) at ./linalg/eigen.jl:115
+        in eigmin(::Array{Complex{Int64},2}) at ./linalg/eigen.jl:113
 
 .. function:: eigvecs(A, [eigvals,][permute=true,][scale=true]) -> Matrix
 

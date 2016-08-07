@@ -10,13 +10,6 @@ Raises a `SystemError` for `errno` with the descriptive string `sysfunc` if `ift
 systemerror
 
 """
-    digamma(x)
-
-Compute the digamma function of `x` (the logarithmic derivative of `gamma(x)`)
-"""
-digamma
-
-"""
     fill!(A, x)
 
 Fill array `A` with the value `x`. If `x` is an object reference, all elements will refer to
@@ -3353,13 +3346,6 @@ Display an informational message. Argument `msg` is a string describing the info
 info
 
 """
-    acscd(x)
-
-Compute the inverse cosecant of `x`, where the output is in degrees.
-"""
-acscd
-
-"""
     ltoh(x)
 
 Converts the endianness of a value from Little-endian to that used by the Host.
@@ -6009,13 +5995,6 @@ character whose category code begins with 'P'. For strings, tests whether this i
 all elements of the string.
 """
 ispunct
-
-"""
-    trigamma(x)
-
-Compute the trigamma function of `x` (the logarithmic second derivative of `gamma(x)`).
-"""
-trigamma
 
 """
     ismount(path) -> Bool
