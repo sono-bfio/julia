@@ -116,7 +116,7 @@ static void clear_mark(int bits)
             void *gcv = &v->header;
             if (!gc_verifying) arraylist_push(&bits_save[v->bits.gc], gcv);
             v->bits.gc = bits;
-            v = v->next;
+            v = jl_astaggedvalue(v->freelist_next);
         }
     }
 
@@ -125,7 +125,7 @@ static void clear_mark(int bits)
         void *gcv = &v->header;
         if (!gc_verifying) arraylist_push(&bits_save[v->bits.gc], gcv);
         v->bits.gc = bits;
-        v = v->next;
+        v = jl_astaggedvalue(v->freelist_next);
     }
 
     jl_taggedvalue_t *pv;

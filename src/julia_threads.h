@@ -29,9 +29,9 @@
 #include <signal.h>
 
 typedef struct {
-    jl_taggedvalue_t *freelist;   // root of list of free objects
-    jl_taggedvalue_t *newpages;   // root of list of chunks of free objects
-    uint16_t osize;      // size of objects in this pool
+    jl_value_t *freelist;  // root of list of free objects
+    jl_taggedvalue_t *newpages;  // root of list of chunks of free objects
+    uint16_t osize;  // size of objects in this pool
 } jl_gc_pool_t;
 
 typedef struct {

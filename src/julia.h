@@ -54,6 +54,7 @@
 #define container_of(ptr, type, member) \
     ((type *) ((char *)(ptr) - offsetof(type, member)))
 
+typedef struct _jl_value_t jl_value_t;
 typedef struct _jl_taggedvalue_t jl_taggedvalue_t;
 
 #include <julia_threads.h>
@@ -68,8 +69,6 @@ extern "C" {
 // used to indicate which types below are subtypes of jl_value_t
 #define JL_DATA_TYPE
 
-typedef struct _jl_value_t jl_value_t;
-
 struct _jl_taggedvalue_bits {
     uintptr_t gc:2;
 };
@@ -77,7 +76,7 @@ struct _jl_taggedvalue_bits {
 struct _jl_taggedvalue_t {
     union {
         uintptr_t header;
-        jl_taggedvalue_t *next;
+        jl_value_t *freelist_next;
         jl_value_t *type; // 16-byte aligned
         struct _jl_taggedvalue_bits bits;
     };

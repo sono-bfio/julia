@@ -779,7 +779,7 @@ static inline jl_taggedvalue_t *reset_page(const jl_gc_pool_t *p, jl_gc_pagemeta
     memset(pg->ages, 0, GC_PAGE_SZ / 8 / p->osize + 1);
     jl_taggedvalue_t *beg = (jl_taggedvalue_t*)(pg->data + GC_PAGE_OFFSET);
     jl_taggedvalue_t *next = (jl_taggedvalue_t*)pg->data;
-    next->next = fl;
+    *(jl_taggedvalue_t**)next = fl;
     pg->has_young = 0;
     pg->has_marked = 0;
     pg->fl_begin_offset = -1;
@@ -829,22 +829,22 @@ JL_DLLEXPORT jl_value_t *jl_gc_pool_alloc(jl_ptls_t ptls, int pool_offset,
     }
     gc_num.poolalloc++;
     // first try to use the freelist
-    jl_taggedvalue_t *v = p->freelist;
-    if (v) {
-        jl_taggedvalue_t *next = v->next;
-        p->freelist = next;
-        if (__unlikely(gc_page_data(v) != gc_page_data(next))) {
+    jl_value_t *fv = p->freelist;
+    if (fv != NULL) {
+        jl_value_t *nextv = jl_astaggedvalue(fv)->freelist_next;
+        p->freelist = nextv;
+        if (__unlikely(gc_page_data(fv) != gc_page_data(nextv))) {
             // we only update pg's fields when the freelist changes page
             // since pg's metadata is likely not in cache
-            jl_gc_pagemeta_t *pg = page_metadata(v);
+            jl_gc_pagemeta_t *pg = page_metadata(fv);
             assert(pg->osize == p->osize);
             pg->nfree = 0;
             pg->has_young = 1;
         }
-        return jl_valueof(v);
+        return fv;
     }
     // if the freelist is empty we reuse empty but not freed pages
-    v = p->newpages;
+    jl_taggedvalue_t *v = p->newpages;
     jl_taggedvalue_t *next = (jl_taggedvalue_t*)((char*)v + osize);
     // If there's no pages left or the current page is used up,
     // we need to use the slow path.
@@ -883,7 +883,7 @@ int jl_gc_classify_pools(size_t sz, int *osize)
 int64_t lazy_freed_pages = 0;
 
 // Returns pointer to terminal pointer of list rooted at *pfl.
-static jl_taggedvalue_t **sweep_page(jl_gc_pool_t *p, jl_gc_pagemeta_t *pg, jl_taggedvalue_t **pfl, int sweep_full, int osize)
+static jl_value_t **sweep_page(jl_gc_pool_t *p, jl_gc_pagemeta_t *pg, jl_value_t **pfl, int sweep_full, int osize)
 {
     char *data = pg->data;
     uint8_t *ages = pg->ages;
@@ -903,7 +903,7 @@ static jl_taggedvalue_t **sweep_page(jl_gc_pool_t *p, jl_gc_pagemeta_t *pg, jl_t
         if (!sweep_full && lazy_freed_pages <= default_collect_interval / GC_PAGE_SZ) {
             jl_taggedvalue_t *begin = reset_page(p, pg, p->newpages);
             p->newpages = begin;
-            begin->next = (jl_taggedvalue_t*)0;
+            begin->freelist_next = (jl_value_t*)NULL;
             lazy_freed_pages++;
         }
         else {
@@ -920,8 +920,8 @@ static jl_taggedvalue_t **sweep_page(jl_gc_pool_t *p, jl_gc_pagemeta_t *pg, jl_t
             // the position of the freelist begin/end in this page
             // is stored in its metadata
             if (pg->fl_begin_offset != (uint16_t)-1) {
-                *pfl = page_pfl_beg(pg);
-                pfl = (jl_taggedvalue_t**)page_pfl_end(pg);
+                *pfl = jl_valueof(page_pfl_beg(pg));
+                pfl = (jl_value_t**)page_pfl_end(pg);
             }
             freedall = 0;
             nfree = pg->nfree;
@@ -935,13 +935,29 @@ static jl_taggedvalue_t **sweep_page(jl_gc_pool_t *p, jl_gc_pagemeta_t *pg, jl_t
         int has_young = 0;
         int16_t prev_nold = 0;
         int pg_nfree = 0;
-        jl_taggedvalue_t **pfl_begin = NULL;
+        jl_value_t **pfl_begin = NULL;
         uint8_t msk = 1; // mask for the age bit in the current age byte
         while ((char*)v <= lim) {
             int bits = v->bits.gc;
+#ifdef MEMFENCE
+            // testing that the old header points either to value->type->datatype
+            // or that the it runs in a chain to hit NULL (e.g. it was in the old freelist)
+            jl_value_t *tv = jl_typeof(jl_valueof(v));
+            // 0x10 (type) and 0x20 (singleton) are used by the incremental serialize to invalidate objects
+            if (v->header != 0 && v->header != 0x10 && v->header != 0x20 && tv != (jl_value_t*)jl_buff_tag) {
+                jl_value_t *dt = jl_typeof(tv);
+                if (jl_astaggedvalue(tv)->header != 0) {
+                    assert(tv != (jl_value_t*)jl_buff_tag);
+                    jl_value_t *tdt = jl_typeof(dt);
+                    if (jl_astaggedvalue(dt)->header != 0 && tdt != (jl_value_t*)jl_datatype_type) {
+                        assert(page_metadata(dt) && page_metadata(tdt));
+                    }
+                }
+            }
+#endif
             if (!gc_marked(bits)) {
-                *pfl = v;
-                pfl = &v->next;
+                *pfl = jl_valueof(v);
+                pfl = &v->freelist_next;
                 pfl_begin = pfl_begin ? pfl_begin : pfl;
                 pg_nfree++;
                 *ages &= ~msk;
@@ -992,7 +1008,7 @@ done:
     return pfl;
 }
 
-static void sweep_pool_region(jl_taggedvalue_t ***pfl, int region_i, int sweep_full)
+static void sweep_pool_region(jl_value_t ***pfl, int region_i, int sweep_full)
 {
     region_t *region = &regions[region_i];
 
@@ -1040,7 +1056,7 @@ static void gc_pool_sync_nfree(jl_gc_pagemeta_t *pg, jl_taggedvalue_t *last)
     int nfree = 0;
     do {
         nfree++;
-        last = last->next;
+        last = jl_astaggedvalue(last->freelist_next);
     } while (gc_page_data(last) == cur_pg);
     pg->nfree = nfree;
 }
@@ -1050,7 +1066,7 @@ static void gc_sweep_pool(int sweep_full)
     gc_time_pool_start();
     lazy_freed_pages = 0;
 
-    jl_taggedvalue_t ***pfl = (jl_taggedvalue_t ***) alloca(jl_n_threads * JL_GC_N_POOLS * sizeof(jl_taggedvalue_t**));
+    jl_value_t ***pfl = (jl_value_t ***) alloca(jl_n_threads * JL_GC_N_POOLS * sizeof(jl_value_t**));
 
     // update metadata of pages that were pointed to by freelist or newpages from a pool
     // i.e. pages being the current allocation target
@@ -1058,16 +1074,16 @@ static void gc_sweep_pool(int sweep_full)
         jl_ptls_t ptls2 = jl_all_tls_states[t_i];
         for (int i = 0; i < JL_GC_N_POOLS; i++) {
             jl_gc_pool_t *p = &ptls2->heap.norm_pools[i];
-            jl_taggedvalue_t *last = p->freelist;
-            if (last) {
-                jl_gc_pagemeta_t *pg = page_metadata(last);
-                gc_pool_sync_nfree(pg, last);
+            jl_value_t *lastv = p->freelist;
+            if (lastv != NULL) {
+                jl_gc_pagemeta_t *pg = page_metadata(lastv);
+                gc_pool_sync_nfree(pg, jl_astaggedvalue(lastv));
                 pg->has_young = 1;
             }
             p->freelist =  NULL;
             pfl[t_i * JL_GC_N_POOLS + i] = &p->freelist;
 
-            last = p->newpages;
+            jl_taggedvalue_t *last = p->newpages;
             if (last) {
                 char *last_p = (char*)last;
                 jl_gc_pagemeta_t *pg = page_metadata(last_p - 1);
@@ -1087,9 +1103,9 @@ static void gc_sweep_pool(int sweep_full)
 
 
     // null out terminal pointers of free lists
-    for (int t_i = 0;t_i < jl_n_threads;t_i++) {
+    for (int t_i = 0; t_i < jl_n_threads; t_i++) {
         for (int i = 0; i < JL_GC_N_POOLS; i++) {
-            *pfl[t_i * JL_GC_N_POOLS + i] = NULL;
+            *pfl[t_i * JL_GC_N_POOLS + i] = (jl_value_t*)NULL;
         }
     }
 
